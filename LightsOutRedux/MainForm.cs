@@ -14,24 +14,19 @@ namespace LightsOutRedux
     {
         private const int GridOffset = 25; // Distance from upper-left side of window
         private const int GridLength = 200; // Size in pixels of grid
-        private const int NumCells = 3; // Number of cells in grid
-        private const int CellLength = GridLength / NumCells;
-        private bool[,] grid; // Stores on/off state of cells in grid
-        private Random rand; // Used to generate random numbers
+        private LightsOutGame game;
 
         public MainForm()
         {
             InitializeComponent();
-            rand = new Random(); // Initializes random number generator
-            grid = new bool[NumCells, NumCells];
-            // Turn entire grid on
-            for (int r = 0; r < NumCells; r++)
-                for (int c = 0; c < NumCells; c++)
-                    grid[r, c] = true;
+            game = new LightsOutGame();
+            game.NewGame();
         }
 
         private void MainForm_Paint(object sender, PaintEventArgs e)
         {
+            int CellLength = GridLength / game.GridSize;
+            int NumCells = game.GridSize;
             Graphics g = e.Graphics;
             for (int r = 0; r < NumCells; r++)
             {
@@ -41,7 +36,7 @@ namespace LightsOutRedux
                     // grid section
                     Brush brush;
                     Pen pen;
-                    if (grid[r, c])
+                    if (game.GetGridValue(r, c))
                     {
                         pen = Pens.Black;
                         brush = Brushes.White; // On
@@ -61,38 +56,22 @@ namespace LightsOutRedux
             }
         }
 
-        private bool PlayerWon()
-        {
-            bool OnBlack = true;
-            for (int r = 0; r < NumCells && OnBlack==true; r++)
-                for (int c = 0; c < NumCells && OnBlack==true; c++)
-                {
-                    if(grid[r,c]==true)
-                    {
-                        OnBlack=false;
-                    }
-                }
-            return OnBlack;
-        }
-
         private void MainForm_MouseDown(object sender, MouseEventArgs e)
         {
+            int CellLength = GridLength / game.GridSize;
             // Make sure click was inside the grid
-            if (e.X < GridOffset || e.X > CellLength * NumCells + GridOffset ||
-            e.Y < GridOffset || e.Y > CellLength * NumCells + GridOffset)
+            if (e.X < GridOffset || e.X > CellLength * game.GridSize + GridOffset ||
+            e.Y < GridOffset || e.Y > CellLength * game.GridSize + GridOffset)
                 return;
             // Find row, col of mouse press
             int r = (e.Y - GridOffset) / CellLength;
             int c = (e.X - GridOffset) / CellLength;
             // Invert selected box and all surrounding boxes
-            for (int i = r - 1; i <= r + 1; i++)
-                for (int j = c - 1; j <= c + 1; j++)
-                    if (i >= 0 && i < NumCells && j >= 0 && j < NumCells)
-                        grid[i, j] = !grid[i, j];
+            game.Move(r, c);
             // Redraw grid
             this.Invalidate();
             // Check to see if puzzle has been solved
-            if (PlayerWon())
+            if (game.IsGameOver())
             {
                 // Display winner dialog box
                 MessageBox.Show(this, "Congratulations! You've won!", "Lights Out!",
@@ -102,11 +81,7 @@ namespace LightsOutRedux
 
         private void button1_Click(object sender, EventArgs e)
         {
-            // Fill grid with either white or black
-            for (int r = 0; r < NumCells; r++)
-                for (int c = 0; c < NumCells; c++)
-                    grid[r, c] = rand.Next(2) == 1;
-            // Redraw grid
+            game.NewGame();
             this.Invalidate();
         }
 
